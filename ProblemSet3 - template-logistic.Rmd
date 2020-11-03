@@ -1,0 +1,133 @@
+---
+title: "Prediction of USA 2020 Election using Logistic Regression and Post Stratification"
+author: "Mark David Sabado"
+date: "November 02 2020"
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+
+# Loading in the cleaned survey Data
+survey_data <- read_csv("C:/Users/markd/OneDrive/Documents/sta304/a3/a3/outputs/survey_data.csv")
+
+# Loading in the cleaned census Data
+census_data <- read_csv("C:/Users/markd/OneDrive/Documents/sta304/a3/a3/outputs/census_data.csv")
+
+
+  survey_data %>%
+  count(education) %>%
+  group_by(education)
+
+  census_data %>%
+  count(race) %>%
+  group_by(race)
+
+  #employed, n/a, not in labor force, unemployed
+head(survey_data)
+head(census_data)
+```
+
+<!-- # Prediction of USA 2020 Election using Logistic Regression and Post-Stratification -->
+
+<!-- ## Mark David Sabado -->
+<!-- ## November 02 2020 -->
+Code can be found on: [INSERT GITHUB LINK HERE]
+
+
+# Model
+
+Here we are interested in predicting the popular vote outcome of the 2020 American federal election (include citation). To do this we are employing a post-stratification technique. In the following sub-sections I will describe the model specifics and the post-stratification calculation.
+
+
+## Model Specifics
+I will be using two logistic regression models to model the proportion of voters who will vote for Donald Trump and who will vote for Joe Biden, I will be using sex, age and race for the model. Each of them a categorical variable. 
+
+```{r, include=FALSE}
+
+# Creating the Model
+trump_model <- glm(vote_trump ~ age +
+                     race +
+                     sex, 
+            data=survey_data, family= "binomial")
+
+biden_model <- glm(vote_biden ~ age + race + sex,
+            data=survey_data, family= "binomial")
+
+# Model Results (to Report in Results section)
+# summary(model)
+# OR
+# broom::tidy(model)
+
+summary(trump_model)
+broom::tidy(trump_model)
+broom::tidy(biden_model)
+
+# plot(trump_model)
+# plot(survey_data$vote_trump, )
+
+```
+
+## Post-Stratification 
+
+We perform a post-stratification analysis. Here I create cells based off of different ages, gender and race. Using the model described in the previous sub-section I will estimate the proportion of voters in each bin. I will then weight each proportion estimate (within each bin) by the respective population size of that bin and sum those values and divide that by the entire population size. 
+
+```{r, include=FALSE}
+
+# Here I will perform the post-stratification calculation
+census_data$logodds_estimate <-
+  trump_model %>%
+  predict(newdata = census_data)
+
+census_data$estimate <-
+  exp(census_data$logodds_estimate)/(1+exp(census_data$logodds_estimate))
+
+trump_predict <- census_data %>%
+  mutate(alp_predict_prop = estimate*n) %>%
+  summarise(alp_predict = sum(alp_predict_prop)/sum(n))
+
+census_data$logodds_estimate <-
+  biden_model %>%
+  predict(newdata = census_data)
+
+census_data$estimate <-
+  exp(census_data$logodds_estimate)/(1+exp(census_data$logodds_estimate))
+
+biden_predict <- census_data %>%
+  mutate(alp_predict_prop = estimate*n) %>%
+  summarise(alp_predict = sum(alp_predict_prop)/sum(n))
+
+```
+
+
+# Results
+
+`r head(survey_data)`
+`r head(census_data)`
+
+Trump
+`r trump_predict`
+
+Biden
+`r biden_predict`
+
+# Discussion
+
+Looking at the two proportion values, we see that the proportion of people that will vote for Biden is slightly higher than the proportion of people that will vote for Trump. With these two values, it can be predicted that Biden will overcome Trump to win the presidential candidacy. Although for both of these models we compare a binary variable of whether a person will vote or not vote for the candidate. This does not necessarily imply that Biden will gain more votes, as the people that may not vote for Trump will explicitly vote for Biden and likewise.
+
+## Weaknesses
+
+The variables used for the model were quite weak, the model could be stronger by introducing more variables. Similarly it would be important to notice the weakness in choice of the variables. Things like gender may not play a strong role in the model. Similarly, the variable of race could involve many cofounding variables that are not accounted for. Leading variables like their birthplace, or if they are not american born, how many years they lived out of the United States of America before they became citizens. These variables could imply a different lifestyle and similarly play role in the ideology and beliefs of the people. Further race may not be a good variable for the model, and a better variable to capture a similar idea would have to do with socio and economic variables related to their upbringing. The next steps would be involving more variables to adjust the model with.
+
+## Next Steps
+
+Concluding, a more diverse and deeper modeling would be advised. The model here is left with more to be used. The data between the census and survey could be closer in design and data. A stronger form of regression could be used with the model.
+
+
+# References
+
+R Libraries: Tidyverse, Haven
+
