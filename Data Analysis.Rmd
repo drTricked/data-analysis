@@ -35,7 +35,7 @@ head(census_data)
 
 <!-- ## Mark David Sabado -->
 <!-- ## November 02 2020 -->
-Code can be found on: [INSERT GITHUB LINK HERE]
+Code can be found on: https://github.com/drTricked/data-analysis
 
 
 # Model
